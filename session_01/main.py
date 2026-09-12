@@ -6,6 +6,9 @@ from openai import OpenAI
 
 load_dotenv()
 
+MAX_STEPS = 10 # Max LLM calls
+count = 0
+
 PROMPT_CONTENT = """
 Get the information of customer 2 and calculate the total
 price of 8 items costing 35 each. Also tell me did you answer according to the tool call results or you made it up, honestly?
@@ -138,7 +141,13 @@ while True:
     messages.append(message)
     
     print(response.choices[0].message.content)
-
+    
+    count += 1 # Increase while loop execution count.
+    
+    if count >= MAX_STEPS:
+        print("Agent stopped: maximum steps reached.")
+        break
+    
     if not message.tool_calls:
         break
         
