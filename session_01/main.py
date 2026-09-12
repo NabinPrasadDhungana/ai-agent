@@ -138,10 +138,7 @@ messages.append(message)
 
 if message.tool_calls:
     tool_usage = []
-    number_of_tool_calls = len(message.tool_calls)
-    for i in range(number_of_tool_calls):
-        tool_call = message.tool_calls[i]
-        
+    for tool_call in message.tool_calls:      
         tool_name = tool_call.function.name
         arguments = json.loads(tool_call.function.arguments)
         
