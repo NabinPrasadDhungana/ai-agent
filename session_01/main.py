@@ -6,7 +6,11 @@ from openai import OpenAI
 
 load_dotenv()
 
-PROMPT_CONTENT = "What is the name of customer 2?"
+PROMPT_CONTENT = """
+Get the information of customer 2 and calculate the total
+price of 8 items costing 35 each. Also tell me did you answer according to the tool call results or you made it up, honestly?
+"""
+
 
 def success(data):
     return {
@@ -58,6 +62,7 @@ def execute_tool(tool_name, arguments:dict):
     if tool_name not in tools:
         return error("No such tool available!")
     try:
+        print("\n---- Tool Execution -> 1 ----\n")
         result = tools[tool_name](**arguments)
         return result
     except Exception as e:
@@ -131,34 +136,27 @@ message = response.choices[0].message
 # Append LLM response to the messages dictionary
 messages.append(message)
 
-# print(message)
-
-# print(message.tool_calls)
-
-tool_call = message.tool_calls[0]
-# print(tool_call)
-
-tool_name = tool_call.function.name
-# print(f"Tool Name: {tool_name}")
-
-# arguments_str = tool_call.function.arguments
-# print(f"Arguments: {arguments_str}")
-arguments = json.loads(tool_call.function.arguments)
-# print(f"Arguments (dict): {arguments}")
-
-# Tool Call
-tool_call_response = execute_tool(
-    tool_name=tool_name,
-    arguments=arguments
-)
-
-tool_usage = {
-    "role": "tool",
-    "tool_call_id": tool_call.id,
-    "content": json.dumps(tool_call_response),
-}
-
-messages.append(tool_usage)
+if message.tool_calls:
+    tool_usage = []
+    number_of_tool_calls = len(message.tool_calls)
+    for i in range(number_of_tool_calls):
+        tool_call = message.tool_calls[i]
+        
+        tool_name = tool_call.function.name
+        arguments = json.loads(tool_call.function.arguments)
+        
+        tool_call_response = execute_tool(
+            tool_name=tool_name,
+            arguments=arguments,
+        )
+        
+        tool_usage.append({
+            "role": "tool",
+            "tool_call_id": tool_call.id,
+            "content": json.dumps(tool_call_response),
+        })
+        
+    messages.extend(tool_usage)  
 
 response_2 = client.chat.completions.create(
     model="openrouter/free",
