@@ -125,19 +125,23 @@ messages = [
     },
 ]
 
-response = client.chat.completions.create(
-    model="openrouter/free",
-    messages=messages,
-    tools=tool_schemas,
-)
+while True:
+    response = client.chat.completions.create(
+        model="openrouter/free",
+        messages=messages,
+        tools=tool_schemas,
+    )
 
-message = response.choices[0].message
+    message = response.choices[0].message
 
-# Append LLM response to the messages dictionary
-messages.append(message)
+    # Append LLM response to the messages dictionary
+    messages.append(message)
+    
+    print(response.choices[0].message.content)
 
-if message.tool_calls:
-    tool_usage = []
+    if not message.tool_calls:
+        break
+        
     for tool_call in message.tool_calls:      
         tool_name = tool_call.function.name
         arguments = json.loads(tool_call.function.arguments)
@@ -147,18 +151,16 @@ if message.tool_calls:
             arguments=arguments,
         )
         
-        tool_usage.append({
+        messages.append({
             "role": "tool",
             "tool_call_id": tool_call.id,
             "content": json.dumps(tool_call_response),
         })
-        
-    messages.extend(tool_usage)  
+    
+    # response_2 = client.chat.completions.create(
+    #     model="openrouter/free",
+    #     messages=messages,
+    #     tools=tool_schemas,
+    # )
 
-response_2 = client.chat.completions.create(
-    model="openrouter/free",
-    messages=messages,
-    tools=tool_schemas,
-)
-
-print(response_2.choices[0].message.content)
+    # print(response_2.choices[0].message.content)
