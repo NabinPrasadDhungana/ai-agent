@@ -147,7 +147,6 @@ while True:
     # Append LLM response to the messages dictionary
     messages.append(message)
     
-    print(response.choices[0].message.content)
     
     count += 1 # Increase while loop execution count.
     state["step"] = count
@@ -157,6 +156,7 @@ while True:
         break
     
     if not message.tool_calls:
+        print(message.content)
         state["status"] = "completed"
         break
         
