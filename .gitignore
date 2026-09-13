@@ -60,6 +60,8 @@ media
 !.keep
 .env
 
+response.txt
+
 .vscode
 dump.rdb
 logs

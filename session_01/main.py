@@ -128,6 +128,13 @@ messages = [
     },
 ]
 
+state = {
+    "customer": None,
+    "total": None,
+    "step": 0,
+    "status": "running",
+}
+
 while True:
     response = client.chat.completions.create(
         model="openrouter/free",
@@ -143,12 +150,14 @@ while True:
     print(response.choices[0].message.content)
     
     count += 1 # Increase while loop execution count.
+    state["step"] = count
     
     if count >= MAX_STEPS:
         print("Agent stopped: maximum steps reached.")
         break
     
     if not message.tool_calls:
+        state["status"] = "completed"
         break
         
     for tool_call in message.tool_calls:      
@@ -165,11 +174,11 @@ while True:
             "tool_call_id": tool_call.id,
             "content": json.dumps(tool_call_response),
         })
-    
-    # response_2 = client.chat.completions.create(
-    #     model="openrouter/free",
-    #     messages=messages,
-    #     tools=tool_schemas,
-    # )
 
-    # print(response_2.choices[0].message.content)
+        if tool_name == "get_customer":
+            state["customer"] = tool_call_response.get("data", "")
+        
+        if tool_name == "calculate_total":
+            state["total"] = tool_call_response.get("data", "")
+
+print(state)
