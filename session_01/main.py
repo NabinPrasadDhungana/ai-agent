@@ -156,14 +156,15 @@ while True:
     
     
     state["step"] += 1
-    
-    if state["step"] >= MAX_STEPS:
-        print("Agent stopped: maximum steps reached.")
-        break
-    
+
     if not message.tool_calls:
-        print(message.content)
         state["status"] = "completed"
+        print(message.content)
+        break
+
+    if state["step"] >= MAX_STEPS:
+        state["status"] = "max_steps_reached"
+        print("Agent stopped: maximum steps reached.")
         break
         
     for tool_call in message.tool_calls:      
