@@ -7,7 +7,6 @@ from openai import OpenAI
 load_dotenv()
 
 MAX_STEPS = 10 # Max LLM calls
-count = 0
 
 PROMPT_CONTENT = """
 Get the information of customer 2 and calculate the total
@@ -129,8 +128,16 @@ messages = [
 ]
 
 state = {
-    "customer": None,
-    "total": None,
+    "customer": {
+        "status": "pending",
+        "data": None,
+        "error": None
+        },
+    "total": {
+        "status": "pending",
+        "data": None,
+        "error": None
+        },
     "step": 0,
     "status": "running",
 }
@@ -148,10 +155,9 @@ while True:
     messages.append(message)
     
     
-    count += 1 # Increase while loop execution count.
-    state["step"] = count
+    state["step"] += 1
     
-    if count >= MAX_STEPS:
+    if state["step"] >= MAX_STEPS:
         print("Agent stopped: maximum steps reached.")
         break
     
@@ -176,9 +182,19 @@ while True:
         })
 
         if tool_name == "get_customer":
-            state["customer"] = tool_call_response.get("data", "")
+            if tool_call_response.get("success") is True:
+                state["customer"]["status"] = "success"
+                state["customer"]["data"] = tool_call_response.get("data", "")
+            else:
+                state["customer"]["status"] = "error"
+                state["customer"]["error"] = tool_call_response.get("error", "")
         
         if tool_name == "calculate_total":
-            state["total"] = tool_call_response.get("data", "")
+            if tool_call_response.get("success") is True:
+                state["total"]["status"] = "success"
+                state["total"]["data"] = tool_call_response.get("data", "")
+            else:
+                state["total"]["status"] = "error"
+                state["total"]["error"] = tool_call_response.get("error", "")
 
 print(state)
