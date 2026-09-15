@@ -7,6 +7,7 @@ from openai import OpenAI
 load_dotenv()
 
 MAX_STEPS = 10 # Max LLM calls
+MAX_RETRIES = 2
 
 PROMPT_CONTENT = """
 Get the information of customer 2 and calculate the total
@@ -20,10 +21,11 @@ def success(data):
         "data": data,
     }
     
-def error(error):
+def error(error, retryable=False):
     return {
         "success": False,
         "error": error,
+        "retryable": retryable,
     }
 
 customers = {
@@ -39,19 +41,19 @@ customers = {
 
 def get_customer(customer_id):
     if customer_id is None:
-        return error("You must provide a customer_id.")
+        return error("You must provide a customer_id.", retryable=False)
     
     if customer_id in customers:
         return success(customers[customer_id])
     
-    return error(f"No customer with customer id {customer_id} exist.")
+    return error(f"No customer with customer id {customer_id} exist.", retryable=False)
 
 def calculate_total(quantity, price):
     if not isinstance(quantity, (int, float)) or not isinstance(price, (int, float)):
-        return error("Both price and quantity should be in int/float types.")
+        return error("Both price and quantity should be in int/float types.", retryable=False)
     
     if quantity < 0 or price < 0:
-        return error("Price or Quantity can not be less than 0.")
+        return error("Price or Quantity can not be less than 0.", retryable=False)
     
     return success(quantity * price)
 
@@ -62,13 +64,39 @@ tools = {
 
 def execute_tool(tool_name, arguments:dict):
     if tool_name not in tools:
-        return error("No such tool available!")
-    try:
-        print("\n---- Tool Execution -> 1 ----\n")
-        result = tools[tool_name](**arguments)
-        return result
-    except Exception as e:
-        return error(f"Tool execution failed: {e}")
+        return error("No such tool available")
+    
+    retries = 0
+    
+    while True:
+        try:
+            print(f"\n---- Tool Execution (attempt {retries + 1}) ----\n")
+
+            result = tools[tool_name](**arguments)
+
+            if result.get("success") is True:
+                return result
+
+            if result.get("retryable") is not True:
+                return result
+
+            if retries >= MAX_RETRIES:
+                return result
+
+            retries += 1
+            print(f"Retrying tool... ({retries}/{MAX_RETRIES})")
+
+        except Exception as e:
+            result = error(
+                f"Tool execution failed: {e}",
+                retryable=True
+            )
+
+            if retries >= MAX_RETRIES:
+                return result
+
+            retries += 1
+            print(f"Retrying tool... ({retries}/{MAX_RETRIES})")
 
 # print(execute_tool("get_customer", {"customer_id": 1}))
 # print(execute_tool("calculate_total", {"quantity": 15, "price": 10}))
