@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool
 
 load_dotenv()
@@ -15,10 +16,6 @@ model = ChatOpenAI(
     api_key=os.getenv("OPENROUTER_API_KEY"),
 )
 
-messages = [
-    SystemMessage(content="You are a helpful assistant."),
-    HumanMessage(content="What is PostgreSQL?")
-]
 
 @tool
 def get_customer(customer_id: int):
@@ -49,7 +46,12 @@ tool_registry = {
 
 model_with_tools = model.bind_tools([get_customer, calculate_total])
 
-response = model_with_tools.invoke("Calculate the total for 8 items costing 35 each.")
+messages = [
+    SystemMessage(content="You are a helpful assistant."),
+    HumanMessage(content="Calculate the total for 8 items costing 35 each."),
+]
+
+response = model_with_tools.invoke(messages)
 
 print(response.content)
 print("---------------------------")
@@ -58,11 +60,26 @@ print(response.tool_calls)
 tools = response.tool_calls
 
 if tools:
-    for toool in tools:
-        tool_name = toool["name"]
-        arguments = toool["args"]
+    for tool_call in tools:
+        tool_name = tool_call["name"]
+        arguments = tool_call["args"]
         
-        if tool_name in tool_registry:
-            result = tool_registry[tool_name].invoke(arguments)    
+        if tool_name not in tool_registry:
+            print(f"Unknown tool: {tool_name}")
+            continue
+        
+        result = tool_registry[tool_name].invoke(arguments)
+        
+        tool_message = {
+            "content": result,
+            "tool_call_id": tool_call["id"],
+        }
+        messages.append(ToolMessage(**tool_message))
+             
             
         print(f"Tool call result for tool {tool_name} = {result}")
+        
+final_answer = model_with_tools.invoke(messages)
+
+print("---------------------")
+print(final_answer.content)
