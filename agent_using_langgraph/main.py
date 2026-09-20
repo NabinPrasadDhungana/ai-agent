@@ -6,8 +6,9 @@ load_dotenv()
 
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
+from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, ToolMessage
+from langchain_core.messages import HumanMessage
 from langchain_core.tools import tool
 
 model = ChatOpenAI(
@@ -39,36 +40,6 @@ tool_registry = {
     "calculate_total": calculate_total,
 }
 
-    
-def tools_node(state: AgentState):
-    print("Tools node reached")
-    overall_tool_result = []
-    for tool_call in state["messages"][-1].tool_calls:
-        tool_name = tool_call["name"]
-        arguments = tool_call["args"]
-        
-        if tool_name not in tool_registry:
-            print(f"Unknown tool: {tool_name}")
-            continue
-        
-        result = tool_registry[tool_name].invoke(arguments)
-        
-        tool_message = ToolMessage(
-            content=str(result),
-            tool_call_id=tool_call["id"],
-        )
-
-        overall_tool_result.append(tool_message)
-        
-    return {
-        "messages": overall_tool_result
-    }
-
-
-def should_continue(state: AgentState):
-    if state["messages"][-1].tool_calls:
-        return "tools"
-    return "end"
 
 model_with_tools = model.bind_tools([calculate_total])
     
@@ -76,19 +47,19 @@ graph_builder = StateGraph(AgentState)
 
 graph_builder.add_node("llm", call_llm)
 
-graph_builder.add_node("tool", tools_node)
+
+tool_node = ToolNode([calculate_total])
+graph_builder.add_node("tools", tool_node)
+
 
 graph_builder.add_edge(START, "llm")
 
-graph_builder.add_edge("tool", "llm")
+graph_builder.add_edge("tools", "llm")
+
 
 graph_builder.add_conditional_edges(
     "llm",
-    should_continue,
-    {
-        "tools": "tool",
-        "end": END
-    }
+    tools_condition
 )
 
 
