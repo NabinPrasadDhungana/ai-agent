@@ -26,6 +26,21 @@ class AgentState(TypedDict):
 def calculate_total(price: float, quantity:float):
     """Calculate the total price using price and quantity."""
     return quantity * price
+
+
+@tool
+def get_customer(customer_id: int):
+    """Get a customer's information using their customer ID."""
+
+    customers = {
+        1: {"id": 1, "name": "Ram", "email": "ram@example.com"},
+        2: {"id": 2, "name": "Sita", "email": "sita@example.com"},
+    }
+
+    if customer_id not in customers:
+        return f"Customer {customer_id} not found."
+
+    return customers[customer_id]
  
     
 def  call_llm(state: AgentState):
@@ -34,21 +49,16 @@ def  call_llm(state: AgentState):
     return {
         "messages": [response]
     }
-    
-
-tool_registry = {
-    "calculate_total": calculate_total,
-}
 
 
-model_with_tools = model.bind_tools([calculate_total])
+model_with_tools = model.bind_tools([calculate_total, get_customer])
     
 graph_builder = StateGraph(AgentState)
 
 graph_builder.add_node("llm", call_llm)
 
 
-tool_node = ToolNode([calculate_total])
+tool_node = ToolNode([calculate_total, get_customer])
 graph_builder.add_node("tools", tool_node)
 
 
@@ -68,7 +78,7 @@ graph = graph_builder.compile()
 result = graph.invoke({
         "messages": [
             HumanMessage(
-                content="Calculate total price of 8 units where per unit price is 35$."
+                content="Get customer 2, and Calculate total price of 8 units where per unit price is 35$."
             )
         ]
     })
