@@ -87,6 +87,8 @@ graph_builder.add_conditional_edges(
     tools_condition
 )
 
+graph_builder.add_edge("llm", END)
+
 
 graph = graph_builder.compile()
 
