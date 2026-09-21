@@ -41,6 +41,21 @@ def get_customer(customer_id: int):
         return f"Customer {customer_id} not found."
 
     return customers[customer_id]
+
+
+@tool
+def get_customer_order(customer_id: int):
+    """Get the current order for a customer."""
+
+    orders = {
+        1: {"customer_id": 1, "items": 3, "price_per_item": 20},
+        2: {"customer_id": 2, "items": 8, "price_per_item": 35},
+    }
+
+    if customer_id not in orders:
+        return f"No order found for customer {customer_id}."
+
+    return orders[customer_id]
  
     
 def  call_llm(state: AgentState):
@@ -51,14 +66,14 @@ def  call_llm(state: AgentState):
     }
 
 
-model_with_tools = model.bind_tools([calculate_total, get_customer])
+model_with_tools = model.bind_tools([calculate_total, get_customer, get_customer_order])
     
 graph_builder = StateGraph(AgentState)
 
 graph_builder.add_node("llm", call_llm)
 
 
-tool_node = ToolNode([calculate_total, get_customer])
+tool_node = ToolNode([calculate_total, get_customer, get_customer_order])
 graph_builder.add_node("tools", tool_node)
 
 
@@ -78,7 +93,9 @@ graph = graph_builder.compile()
 result = graph.invoke({
         "messages": [
             HumanMessage(
-                content="Get customer 2, and Calculate total price of 8 units where per unit price is 35$."
+                content="Get customer 2's order."
+                        "Then calculate the total price of that order."
+                        "Finally tell me the customer's name and the total price."
             )
         ]
     })
