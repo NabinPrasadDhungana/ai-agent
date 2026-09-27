@@ -66,3 +66,6 @@ response.txt
 dump.rdb
 logs
 env/
+
+# file
+conversation.txt

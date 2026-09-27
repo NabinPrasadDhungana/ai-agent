@@ -50,3 +50,15 @@ while user_input != "/bye":
     
     conversation_history = response["messages"]
     user_input = input("Enter your input (type '/bye' to end the session): ")
+    
+    
+with open("conversation.txt", mode="w") as file:
+    file.write("Your Conversation History:\n")
+    
+    for message in conversation_history:
+        if isinstance(message, HumanMessage):
+            file.write(f"You: {message}\n")
+        elif isinstance(message, AIMessage):
+            file.write(f"AI: {message}\n\n")
+    
+    file.write("Conversation END!")
