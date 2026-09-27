@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import TypedDict, List, Union
 from dotenv import load_dotenv
 
@@ -40,6 +41,12 @@ chatbot = graph.compile()
 
 conversation_history = []
 
+history_file = Path("conversation.txt")
+
+if history_file.exists():
+    with open("conversation.txt", "r") as rfile:
+        conversation_history.append(rfile.read())
+
 user_input = input("Enter your input (type '/bye' to end the session): ")
 
 while user_input != "/bye":
@@ -52,13 +59,13 @@ while user_input != "/bye":
     user_input = input("Enter your input (type '/bye' to end the session): ")
     
     
-with open("conversation.txt", mode="w") as file:
+with open("conversation.txt", mode="a") as file:
     file.write("Your Conversation History:\n")
     
     for message in conversation_history:
         if isinstance(message, HumanMessage):
-            file.write(f"You: {message}\n")
+            file.write(f"You: {message.content}\n")
         elif isinstance(message, AIMessage):
-            file.write(f"AI: {message}\n\n")
+            file.write(f"AI: {message.content}\n\n")
     
     file.write("Conversation END!")
